@@ -1,3 +1,0 @@
-mode=fit model=sec_contact round=1 outdir=results_wild host=bp1-compute215
-started: Thu Aug 13 12:23:11 BST 2026
-python wildcat_pipeline.py fit --model sec_contact --task-id 48 --seed-base 2000 --fold 2 --maxiter 800 --maxeval 20000 --ftol 1e-2 --maxtime 5400

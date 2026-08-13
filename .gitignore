@@ -1,0 +1,30 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- SLURM logs ---
+logs/
+*.out
+*.err
+slurm-*.out
+
+# --- Optimisation pickles ---
+*.pkl
+results*/r*/
+
+# --- Raw genomic input ---
+msmc_input_*.txt
+*.vcf
+*.vcf.gz
+*.bcf
+*.bam
+*.bai
+*.npy
+*.hdf5
+
+# --- OS / editor ---
+.DS_Store
+.vscode/
+*.swp
