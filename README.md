@@ -3,9 +3,7 @@
 Fitting two-population demographic models to a joint site frequency spectrum
 with [dadi](https://dadi.readthedocs.io) 2.4.4, and comparing them with CLAIC.
 
-Summer research internship, University of Bristol, supervised by Mark Beaumont.
-Model definitions (`wildcat_models.py`) and the CLAIC implementation
-(`claic.py`) are Dennis Prangle's.
+Summer research internship, University of Bristol, supervised by Mark Beaumont, Dennis Prangle, and Grace Yan
 
 ## Data
 
