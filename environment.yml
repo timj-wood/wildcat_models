@@ -1,0 +1,13 @@
+name: dadi
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - dadi=2.4.4
+  - nlopt
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - pip
