@@ -1,0 +1,7 @@
+mode=fit model=sec_contact round=1 outdir=results_wild host=bp1-compute135
+started: Thu Aug 13 12:13:09 BST 2026
+python wildcat_pipeline.py fit --model sec_contact --task-id 28 --seed-base 2000 --fold 2 --maxiter 800 --maxeval 20000 --ftol 1e-2 --maxtime 5400
+model=sec_contact  task=28  ns=(np.int64(32), np.int64(12))  pts=[42, 52, 62]
+  restart 0: ll=-1921.278  theta=37538.3  (283s)
+wrote results_wild/fit_sec_contact_task0028.pkl
+finished: Thu Aug 13 12:17:56 BST 2026

@@ -1,0 +1,28 @@
+{
+  "pops": [
+    "SCO_WILD",
+    "DOM"
+  ],
+  "ns": [
+    32,
+    12
+  ],
+  "L": 22488648,
+  "mu": 8.6e-09,
+  "generation_time": 3.0,
+  "chunk_size": 1000000,
+  "n_boot": 100,
+  "boot_seed": 20260807,
+  "input_files": [
+    "msmc_input_chr1.txt",
+    "msmc_input_chr2.txt"
+  ],
+  "pts_l": [
+    42,
+    52,
+    62
+  ],
+  "n_sites": 145512,
+  "n_multiallelic": 204,
+  "n_malformed": 0
+}
