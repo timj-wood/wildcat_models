@@ -25,7 +25,7 @@ Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation
 The spectrum is folded, 33 x 13, with 123,348 segregating sites. 204
 multiallelic sites are dropped.
 
-# ![Folded joint site frequency spectrum, Scottish wild-caught x domestic](plots/jsfs.png)
+%![Folded joint site frequency spectrum, Scottish wild-caught x domestic](plots/jsfs.png)
 
 ## Models
 
