@@ -72,7 +72,7 @@ which writes per-model CSVs, `model_comparison.csv` and fit figures.
 
 Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
 
-## Status
+## Results
 
 Work in progress. `sec_contact` is running; `basic` and `growth` to follow.
 
