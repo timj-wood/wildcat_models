@@ -74,7 +74,7 @@ Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
 
 ## Results
 
-Work in progress. `sec_contact` is running; `basic` and `growth` to follow.
+Work in progress.
 
 An earlier version of this analysis pooled the wild-caught and captive Scottish
 cats. Those results are not comparable to these, because the spectrum is a
