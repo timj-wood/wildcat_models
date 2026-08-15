@@ -1,0 +1,4 @@
+model,ll,k_incl_theta,eff_params,CLAIC,dCLAIC,weight,AIC_unadjusted,eps
+growth,-1376.22,14,310.62,3373.67,0.00,1.000,2780.44,0.01
+basic,-1411.14,12,292.73,3407.74,34.07,0.000,2846.29,0.01
+sec_contact,-1768.69,7,338.33,4214.04,840.37,0.000,3551.37,0.01

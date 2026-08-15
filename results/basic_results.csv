@@ -1,0 +1,73 @@
+Parameter,Value,Description
+,,
+=== basic: Constants ===,,
+mu,8.600e-09,Mutation rate per bp per generation
+Generation time,3,Years per generation
+L,22488648,Callable sites
+theta,10454.38,Population mutation rate (4*Nref*mu*L)
+,,
+=== Scaled Parameters (Coalescent Units) ===,,
+nuS,0.1542,Silvestris branch after the split
+nuL,3.4633,Lybica branch after the split
+nuB,0.2006,Scottish wildcat from TB to the present
+nuD,1.6585,Domestic cat from TD to the present
+TA,5.9872,Split of silvestris and lybica (before present)
+TB,0.0083,Wildcat size change / landbridge (before present)
+TD,0.1307,Domestic size change / domestication (before present)
+m_ls,0.3390,Early gene flow into silvestris from lybica (2*Nref*m)
+m_sl,0.1399,Early gene flow into lybica from silvestris (2*Nref*m)
+m2_ds,18.7571,Recent gene flow into wildcat from domestic (2*Nref*m)
+m2_sd,6.0652,Recent gene flow into domestic from wildcat (2*Nref*m)
+,,
+=== Real-World Parameters ===,,
+Nref,13514,Ancestral effective population size
+N_nuS,2084,Silvestris branch after the split in individuals
+N_nuL,46802,Lybica branch after the split in individuals
+N_nuB,2711,Scottish wildcat from TB to the present in individuals
+N_nuD,22413,Domestic cat from TD to the present in individuals
+TA_generations,161820,"Split of silvestris and lybica (before present), in generations"
+TA_years,485461,"Split of silvestris and lybica (before present), in years"
+TB_generations,224,"Wildcat size change / landbridge (before present), in generations"
+TB_years,673,"Wildcat size change / landbridge (before present), in years"
+TD_generations,3533,"Domestic size change / domestication (before present), in generations"
+TD_years,10599,"Domestic size change / domestication (before present), in years"
+T_divergence_generations,161820,Total divergence time in generations (TA)
+T_divergence_years,485461,Total divergence time in years (TA)
+m_ls_per_gen,1.254355e-05,"Early gene flow into silvestris from lybica (2*Nref*m), per generation"
+m_sl_per_gen,5.176900e-06,"Early gene flow into lybica from silvestris (2*Nref*m), per generation"
+m2_ds_per_gen,6.939978e-04,"Recent gene flow into wildcat from domestic (2*Nref*m), per generation"
+m2_sd_per_gen,2.244092e-04,"Recent gene flow into domestic from wildcat (2*Nref*m), per generation"
+migrants_m_ls,0.026,Individuals per generation entering the receiving population (nuS * m_ls / 2)
+migrants_m_sl,0.242,Individuals per generation entering the receiving population (nuL * m_sl / 2)
+migrants_m2_ds,1.881,Individuals per generation entering the receiving population (nuB * m2_ds / 2)
+migrants_m2_sd,5.030,Individuals per generation entering the receiving population (nuD * m2_sd / 2)
+,,
+=== Model Fit Statistics ===,,
+Log-likelihood,-1411.14,Higher is better
+Parameters (k),11,"Free parameters, excluding theta"
+AIC,2846.29,"Lower is better - UNADJUSTED, not comparable across models"
+Effective parameters,292.73,tr(J.H^-1); exceeds k+1 by however much linkage has inflated the composite likelihood
+CLAIC,3407.74,-2*ll + 2*tr(J.H^-1). Lower is better. THIS is the comparable one
+dCLAIC,0.00,CLAIC above the best model
+Akaike weight,1.000,
+Bootstraps,100,Block bootstrap replicates behind J
+eps,0.01,Finite-difference step size used for the values above
+"Stability check, eps = 0.01","eff. k 292.73, CLAIC 3407.74","H condition number 1.4e+15, smallest eigenvalue +6.33e-07. A large move in eff. k between step sizes means the finite differences are not converged; a negative eigenvalue means the fit is not at an interior maximum and the value is meaningless."
+"Stability check, eps = 0.005","eff. k 293.29, CLAIC 3408.86","H condition number 1.1e+15, smallest eigenvalue -9.24e-01. A large move in eff. k between step sizes means the finite differences are not converged; a negative eigenvalue means the fit is not at an interior maximum and the value is meaningless."
+,,
+=== Convergence ===,,
+Top-10 spread,0.107,Log-likelihood gap between best and 10th-best restart
+Converged?,yes,"Below ~0.5 the top restarts agree. 0.5-1.0 is MARGINAL: the gap may be a flat ridge or two modes of similar fit, and Godambe needs a single well-defined optimum. Above ~1 the optimiser has NOT converged. Check the per-parameter spread from the 'best' stage before trusting a marginal verdict."
+Restarts succeeded,50,Restarts returning a fit
+Restarts attempted,50,"Restarts run. Counts only the pickles currently in results_wild/ -- if earlier staged rounds were moved aside, the full search was larger than this."
+Parameters on a bound,none,"A fit on a bound is a constrained optimum, not a maximum"
+Parameters near a bound,m2_ds,"Within 10% of a bound but not on it. Not a constrained optimum, so the Hessian is still valid, but the optimiser had little room and the estimate may be tracking the bound rather than the data. Widen the bound and re-fit before reporting these."
+Migration above grid threshold,m2_ds = 18.76,"Rates above 10 strain dadi's diffusion grid, so the Richardson extrapolation across pts_l may not have converged. Re-evaluate the likelihood at this optimum with larger pts_l; if it moves by more than a unit or two, the estimate is partly numerical and should not be reported as a biological quantity."
+,,
+=== Caveats ===,,
+Why CLAIC and not AIC,,"dadi maximises a composite likelihood (it treats linked sites as independent), so it overstates the information in the data and AIC's 2k penalty is too small. CLAIC replaces k with tr(J.H^-1), estimated from block bootstraps. Compare models on CLAIC only."
+CLAIC precision,,"The trace carries sampling noise of roughly 10-15%, so CLAIC differences of a few units are not meaningful. Read only large gaps."
+Rates vs individuals,,"Migrant individuals per generation is nu*M/2, which scales with the RECEIVING population, not Nref. A large rate asymmetry can come purely from a size difference, so read both numbers together."
+Time parameterisation,,"sec_contact's T1 and T2 are epoch DURATIONS; Dennis's TA, TB and TD are absolute times BEFORE PRESENT. Total divergence here is TA."
+Grid stability,,"High migration strains dadi's diffusion grid. Where a rate exceeds 10, re-evaluate at larger grid sizes and confirm the likelihood does not move -- see 'Migration above grid threshold' above for whether this fit trips it."
+Population order,,"pop1 = SCO_WILD, pop2 = DOM. m12 is migration INTO pop1 FROM pop2. Column-to-population assignment was verified empirically by PCA. Note that Dennis's models name the SOURCE first instead (m2_ds is domestic -> silvestris), so the two conventions are opposite."
