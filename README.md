@@ -74,8 +74,6 @@ Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
 
 ## Results
 
-## Results
-
 Each model was fitted from 50 restarts in each of four rounds, then compared
 with CLAIC over 100 block bootstraps. Effective parameter counts are
 tr(J.H^-1), and are far larger than the number of free parameters because the
