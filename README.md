@@ -25,6 +25,8 @@ Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation
 The spectrum is folded, 33 x 13, with 123,348 segregating sites. 204
 multiallelic sites are dropped.
 
+<img src="plots/jsfs.png" alt="Folded joint site frequency spectrum, Scottish wild-caught x domestic" width="450">
+
 ## Models
 
 | Name | Function | Parameters |
@@ -113,7 +115,7 @@ domestication size change at a date the archaeology supports.
 | Domestic into wildcat | 1.88 individuals per generation |
 | Wildcat into domestic | 5.03 individuals per generation |
 
-![basic model fit and residuals](results/fit_basic.png)
+<img src="plots/fit_basic.png" alt="basic model fit and residuals" width="650">
 
 TD is close to the archaeological estimate for cat domestication in the Near
 East, which is around 10,000 years and is not an input to the fit. TA is
