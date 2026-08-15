@@ -115,7 +115,7 @@ domestication size change at a date the archaeology supports.
 | Domestic into wildcat | 1.88 individuals per generation |
 | Wildcat into domestic | 5.03 individuals per generation |
 
-<img src="plots/fit_basic.png" alt="basic model fit and residuals" width="650">
+<img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
 
 TD is close to the archaeological estimate for cat domestication in the Near
 East, which is around 10,000 years and is not an input to the fit. TA is
