@@ -27,4 +27,5 @@ msmc_input_*.txt
 # --- OS / editor ---
 .DS_Store
 .vscode/
-*.swp.Rhistory
+*.swp
+.Rhistory
