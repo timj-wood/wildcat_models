@@ -1,7 +1,9 @@
 # Scottish wildcat / domestic cat demography
 
 Fitting two-population demographic models to a joint site frequency spectrum
-with [dadi](https://dadi.readthedocs.io) 2.4.4, and comparing them with CLAIC.
+with [dadi](https://dadi.readthedocs.io) 2.4.4, comparing them with CLAIC, and
+putting confidence intervals on the fitted parameters with the Godambe
+information matrix.
 
 ## Data
 
@@ -20,8 +22,22 @@ captive Scottish cats is 0.085, so they are not treated as one population.
 Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation
 (Wang et al. 2022), generation time 3 years (Howard-McCombe et al. 2021).
 
-The spectrum is folded, 33 x 13, with 123,348 segregating sites. 204
-multiallelic sites are dropped.
+Three site counts, which are easy to confuse:
+
+| Count | Value | Where it comes from |
+|---|---|---|
+| Raw segregating sites | 145,716 | lines in the two multihetsep files |
+| Biallelic | 145,512 | after dropping 204 multiallelic |
+| In the fitted spectrum | 123,348 | `Spectrum.S()` on the 33 x 13 array |
+
+The last gap is not filtering. 22,164 sites are polymorphic across all 92
+haplotypes but monomorphic within the 32 Scottish and 12 domestic haplotypes
+analysed, so they land in the masked corner.
+
+The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the
+monomorphic corner, plus the 208 redundant entries above the folding diagonal
+at i + j = 22, whose counts are already carried by their reflected partners.
+The likelihood is therefore evaluated over 220 bins.
 
 <img src="plots/jsfs.png" alt="Folded joint site frequency spectrum, Scottish wild-caught x domestic" width="450">
 
@@ -37,6 +53,16 @@ multiallelic sites are dropped.
 constraint TA > max(TB, TD). `growth` is the same with exponential size changes
 instead of instantaneous ones. Both are constrained, so they are fitted with
 COBYLA; `sec_contact` is unconstrained and uses Nelder-Mead in log space.
+
+Two notation traps. Migration subscripts name the **receiving** population
+first in `sec_contact`, following dadi, and the **source** population first in
+`basic` and `growth`, following the original specification. And sizes in
+`basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into
+theta, which is why `basic` has 11 free parameters rather than 12.
+
+`basic` is not a special case of `growth`: fixing a growth rate to zero holds a
+branch flat to the present rather than reproducing the jump at TB or TD. They
+are non-nested, hence CLAIC rather than a likelihood ratio test.
 
 ## Running it
 
@@ -56,7 +82,14 @@ Then compare:
 
     sbatch submit_report.sh
 
-which writes per-model CSVs, `model_comparison.csv` and fit figures.
+which writes per-model CSVs, `model_comparison.csv`, confidence intervals and
+fit figures.
+
+Run parameters are written to a metadata file alongside each set of results,
+including the seed used to draw the 100 bootstrap replicates. The bootstrap is
+the only stochastic step between the data and the reported CLAIC values and
+intervals, so recording the seed means those can be regenerated exactly rather
+than approximately.
 
 ## Files
 
@@ -66,16 +99,16 @@ which writes per-model CSVs, `model_comparison.csv` and fit figures.
     submit_sfs.sh          build the spectrum and bootstraps
     run_stages.sh          submit a four-round staged optimisation
     submit_stage.sh        one round, run as a job array
-    submit_report.sh       CLAIC comparison and figures
+    submit_report.sh       CLAIC comparison, intervals and figures
 
 Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
 
 ## Results
 
-Each model was fitted from 50 restarts in each of four rounds, then compared
-with CLAIC over 100 block bootstraps. Effective parameter counts are
-tr(J.H^-1), and are far larger than the number of free parameters because the
-composite likelihood treats linked sites as independent.
+Four rounds of 50 restarts per model, compared with CLAIC over 100 block
+bootstraps. Effective parameter counts are tr(J.H^-1) over the parameter vector
+including theta, so read against k+1. They far exceed the free parameter count
+because the composite likelihood treats linked sites as independent.
 
 | Model | ll | k | eff. k | CLAIC | dCLAIC |
 |---|---|---|---|---|---|
@@ -83,58 +116,77 @@ composite likelihood treats linked sites as independent.
 | `basic` | -1411.14 | 11 | 292.7 | 3407.74 | 34.07 |
 | `sec_contact` | -1768.69 | 6 | 338.3 | 4214.04 | 840.37 |
 
-`sec_contact` is rejected. It loses by 840 CLAIC units, and its effective
-parameter count is the largest of the three despite having the fewest
-parameters, which is what a sandwich estimator does when a model is
-misspecified. Its migration rates are also at or above the point where dadi's
-diffusion grid stops being reliable, with m12 pinned on its upper bound.
+`sec_contact` is rejected by 840 units. `basic` and `growth` are not
+distinguishable: the 34-unit gap is smaller than the noise on the penalty terms
+that produce it. `basic` is reported, being the more parsimonious, the only one
+to converge to an unconstrained interior optimum (top-10 spread 0.107), and the
+most stable to the finite-difference step size.
 
-`basic` and `growth` are not distinguishable. The gap is 34 CLAIC units, but
-the effective parameter counts are near 300 and carry roughly 10-15% sampling
-noise, so the penalty term alone is uncertain by tens of units. `growth` also
-fits nuS against its upper bound, which makes that optimum constrained rather
-than maximal and its CLAIC not formally valid, and its top-10 restart spread of
-0.90 is marginal.
+### Parameters of `basic`
 
-`basic` is reported here. It is the more parsimonious of the two, it converged
-cleanly (top-10 spread 0.107, no parameter on a bound), and it puts the
-domestication size change at a date the archaeology supports.
+95% intervals from the Godambe matrix on the log scale, so multiplicative and
+asymmetric. Physical intervals convert each limit at the point estimate of
+Nref, and so do **not** carry the uncertainty in theta.
 
-| Parameter | Value |
-|---|---|
-| Nref | 13,514 |
-| Split of silvestris and lybica, TA | 485,000 years |
-| Domestic size change, TD | 10,600 years |
-| Wildcat size change, TB | 673 years |
-| Wildcat Ne after TB | 2,711 |
-| Domestic Ne after TD | 22,413 |
-| Domestic into wildcat | 1.88 individuals per generation |
-| Wildcat into domestic | 5.03 individuals per generation |
+| Parameter | Value | 95% CI | CI width |
+|---|---|---|---|
+| Nref | 13,514 | 6,144 - 29,718 | 4.8 |
+| Split of silvestris and lybica, TA | 485,000 yr | 186,000 - 1,264,000 | 6.8 |
+| Domestic size change, TD | 10,600 yr | 3,200 - 35,100 | 11.0 |
+| Wildcat size change, TB | 673 yr | 648 - 700 | 1.08 |
+| Wildcat Ne after TB | 2,711 | 2,191 - 3,354 | 1.53 |
+| Domestic Ne after TD | 22,413 | 8,661 - 58,002 | 6.7 |
+| Domestic into wildcat, m2_ds | 18.76 | 18.03 - 19.51 | 1.08 |
+| Wildcat into domestic, m2_sd | 6.07 | 4.49 - 8.20 | 1.83 |
+
+Migrant counts are 1.88 individuals per generation into the wildcat and 5.03
+into the domestic, with no interval, being products of two correlated
+parameters. Rates and counts point opposite ways, because the count scales with
+the receiving population.
 
 <img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
 
-TD is close to the archaeological estimate for cat domestication in the Near
-East, which is around 10,000 years and is not an input to the fit. TA is
-roughly twice the usual published figure for the silvestris/lybica split. Deep
-parameters are weakly constrained by a site frequency spectrum, and both models
-agree on it, so this is a property of the data rather than of either
-parameterisation. TB is far too recent for the landbridge it was meant to
-represent, and is more likely picking up the recent decline of the Scottish
-population.
+### Main findings
 
-m2_ds, recent gene flow into the wildcat, sits within 10% of its upper bound
-and above the rate at which the diffusion grid strains, so 18.76 is better read
-as the data wanting a high rate than as an estimate of one.
+- **Only the epoch since TB is determined.** The four narrowest intervals (TB,
+  m2_ds, NB, m2_sd) are all under a factor of two; everything else is 4.4 to
+  11.0. The boundary is before/after TB, not deep/recent — ND is recent by any
+  ordinary reading and still spans 6.7.
+- **Model agreement is not determination.** `basic` and `growth` agree on Nref
+  and TA to within 7% and 5%, yet neither is well determined within either
+  model.
+- **The intervals are within-model.** TB and m2_ds do not overlap between two
+  models CLAIC cannot separate (648-700 vs 700-1,035; 18.03-19.51 vs
+  11.40-17.86), and those are the two each determines best. The missing term is
+  model uncertainty.
+- **TD** is close to the archaeological date for commensal association in the
+  Near East and was not an input, but spans 3,200-35,100 years and overlaps
+  `growth`'s, so it is not resolved.
+- **TA** spans essentially the whole published range (mitochondrial ~230,000
+  and ~430,000, nuclear ~1.4M), so these data do not discriminate.
+- **TB matches none of the candidate events**, and its narrow interval shows
+  this is not imprecision. The landbridge label is better dropped than
+  defended.
 
-Residuals for `basic` and `growth` are near identical and still structured,
-mostly along the low domestic frequency edge and the fixed-in-domestic column.
+### Caveats
 
-Confidence intervals from the Godambe matrix are not computed, so the values
-above carry no uncertainties.
+- m2_ds sits within 10% of its upper bound and above the rate where the
+  diffusion grid strains. Its narrow interval does not fix this: the Godambe
+  matrix is built at the fitted point on the same grid.
+- The fitted introgression rate is ~0.07% per generation against ~13% from
+  genome-wide ancestry work. dadi holds the rate constant over ~224
+  generations, so a recent pulse comes out diluted.
+- H for `basic` is numerically singular (condition number ~1e15), so some
+  interval width on the deep parameters may be numerical. Intervals are at
+  eps = 0.01 only.
+- `growth` fits nuS against its upper bound, so its optimum is constrained and
+  its CLAIC not formally valid.
+- Residuals for `basic` and `growth` are near identical and still structured,
+  along the low domestic frequency edge and the fixed-in-domestic column.
+- An earlier version pooled the wild-caught and captive Scottish cats. Those
+  results are not comparable, as the spectrum is a different shape and
+  composite log-likelihoods do not carry across.
 
-An earlier version of this analysis pooled the wild-caught and captive Scottish
-cats. Those results are not comparable to these, because the spectrum is a
-different shape and composite log-likelihoods do not carry across.
 ## Notes
 
 Some things that cost time to work out, in case they are useful:
@@ -150,3 +202,12 @@ Some things that cost time to work out, in case they are useful:
   exactly 0, so migration lower bounds are floored at 1e-4.
 - CLAIC needs a properly converged optimum or the Hessian is unstable. The
   report stage re-polishes the best restart before computing it.
+- `Godambe.get_godambe` inverts J unconditionally, contrary to its docstring.
+  Take J and H as intermediates and assemble CLAIC yourself.
+- With `multinom=True`, theta is appended to the parameter vector, so J and H
+  are (k+1) x (k+1) and tr(J.H^-1) must be read against k+1, not k.
+- `Misc.fragment_data_dict` chunks on physical position, not on callable sites.
+  Two chromosomes over ~414 Mb give ~415 blocks at 1 Mb, not the 22 that
+  dividing L by the chunk size suggests.
+- Godambe intervals are within-model. Two models the data cannot separate can
+  return intervals that exclude each other, and here they do.
