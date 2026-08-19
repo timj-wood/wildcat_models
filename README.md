@@ -103,7 +103,7 @@ and in whether migration runs the whole way.
   the model.
 * The two size changes are constrained to postdate the split, TA > max(TB, TD).
 
-<img src="plots/model.png" alt="Schematic of the basic model" width="500">
+<img src="plots/jsfs.png" alt="Schematic of the basic model" width="450">
 
 `growth` is the same model with exponential size changes in place of the
 instantaneous ones. `sec_contact` is simpler in a different direction: the
