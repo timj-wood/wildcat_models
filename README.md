@@ -146,47 +146,6 @@ the receiving population.
 
 <img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
 
-### Main findings
-
-- **Only the epoch since TB is determined.** The four narrowest intervals (TB,
-  m2_ds, NB, m2_sd) are all under a factor of two; everything else is 4.4 to
-  11.0. The boundary is before/after TB, not deep/recent — ND is recent by any
-  ordinary reading and still spans 6.7.
-- **Model agreement is not determination.** `basic` and `growth` agree on Nref
-  and TA to within 7% and 5%, yet neither is well determined within either
-  model.
-- **The intervals are within-model.** TB and m2_ds do not overlap between two
-  models CLAIC cannot separate (648-700 vs 700-1,035; 18.03-19.51 vs
-  11.40-17.86), and those are the two each determines best. The missing term is
-  model uncertainty.
-- **TD** is close to the archaeological date for commensal association in the
-  Near East and was not an input, but spans 3,200-35,100 years and overlaps
-  `growth`'s, so it is not resolved.
-- **TA** spans essentially the whole published range (mitochondrial ~230,000
-  and ~430,000, nuclear ~1.4M), so these data do not discriminate.
-- **TB matches none of the candidate events**, and its narrow interval shows
-  this is not imprecision. The landbridge label is better dropped than
-  defended.
-
-### Caveats
-
-- m2_ds sits within 10% of its upper bound and above the rate where the
-  diffusion grid strains. Its narrow interval does not fix this: the Godambe
-  matrix is built at the fitted point on the same grid.
-- The fitted introgression rate is ~0.07% per generation against ~13% from
-  genome-wide ancestry work. dadi holds the rate constant over ~224
-  generations, so a recent pulse comes out diluted.
-- H for `basic` is numerically singular (condition number ~1e15), so some
-  interval width on the deep parameters may be numerical. Intervals are at
-  eps = 0.01 only.
-- `growth` fits nuS against its upper bound, so its optimum is constrained and
-  its CLAIC not formally valid.
-- Residuals for `basic` and `growth` are near identical and still structured,
-  along the low domestic frequency edge and the fixed-in-domestic column.
-- An earlier version pooled the wild-caught and captive Scottish cats. Those
-  results are not comparable, as the spectrum is a different shape and
-  composite log-likelihoods do not carry across.
-
 ## Notes
 
 Some things that cost time to work out, in case they are useful:
