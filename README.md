@@ -133,17 +133,3 @@ Four rounds of 50 restarts per model, compared with CLAIC over 100 block bootstr
 Migrant counts are 1.88 individuals per generation into the wildcat and 5.03 into the domestic, with no interval, being products of two correlated parameters. Rates and counts point opposite ways, because the count scales with the receiving population.
 
 <img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
-
-## Notes
-
-Some things that cost time to work out, in case they are useful:
-
-- `dadi.Inference.opt(log_opt=True)` returns the exponentiated starting point, not the optimum. The likelihood is still correct.
-- `dadi.Misc.perturb_params` uses numpy's legacy global RandomState. `np.random.default_rng()` is silently ignored, so seed with `np.random.seed()`.
-- `optimize_log_fmin` honours only `maxiter`. COBYLA honours only `maxtime` and `maxeval`. Passing the wrong one fails silently.
-- COBYLA raises `RoundoffLimited` when a parameter pins against a bound of exactly 0, so migration lower bounds are floored at 1e-4.
-- CLAIC needs a properly converged optimum or the Hessian is unstable. The report stage re-polishes the best restart before computing it.
-- `Godambe.get_godambe` inverts J unconditionally, contrary to its docstring. Take J and H as intermediates and assemble CLAIC yourself.
-- With `multinom=True`, theta is appended to the parameter vector, so J and H are (k+1) x (k+1) and tr(J.H^-1) must be read against k+1, not k.
-- `Misc.fragment_data_dict` chunks on physical position, not on callable sites. Two chromosomes over ~414 Mb give ~415 blocks at 1 Mb, not the 22 that dividing L by the chunk size suggests.
-- Godambe intervals are within-model. Two models the data cannot separate can return intervals that exclude each other, and here they do.
