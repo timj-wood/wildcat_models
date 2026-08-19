@@ -23,7 +23,7 @@ Whole-genome SNPs from 46 cats, chromosomes 1 and 2, in MSMC multihetsep format.
 
 Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation (Wang et al. 2022), generation time 3 years (Howard-McCombe et al. 2021).
 
-Three site counts, which are easy to confuse:
+Three site counts:
 
 | Count | Value | Where it comes from |
 |---|---|---|
@@ -33,10 +33,7 @@ Three site counts, which are easy to confuse:
 
 The last gap is not filtering. 22,164 sites are polymorphic across all 92 haplotypes but monomorphic within the 32 Scottish and 12 domestic haplotypes analysed, so they land in the masked corner.
 
-The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the
-monomorphic corner, plus the 208 redundant entries above the folding diagonal
-at i + j = 22, whose counts are already carried by their reflected partners.
-The likelihood is therefore evaluated over 220 bins.
+The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the monomorphic corner, plus the 208 redundant entries above the folding diagonal at i + j = 22, whose counts are already carried by their reflected partners. The likelihood is therefore evaluated over 220 bins.
 
 <img src="plots/jsfs.png" alt="Folded joint site frequency spectrum, Scottish wild-caught x domestic" width="450">
 
@@ -48,7 +45,7 @@ The likelihood is therefore evaluated over 220 bins.
 | `basic` | `wildcat_domestic` | 11 |
 | `growth` | `wildcat_domestic_growth` | 13 |
 
-All three are isolation-with-migration models: one ancestral population splits into a *silvestris* branch and a *lybica* branch, and the two exchange migrants after the split. They differ in what happens to population size on each branch, and in whether migration runs the whole way.
+All three models involve the ancestral population splitting into a *silvestris* branch and a *lybica* branch, where the two exchange migrants after the split. Model differences lie in what occurs to the population sizes, after the split, and the timings of migration between the two populations.
 
 `basic` works as follows:
 
@@ -66,17 +63,17 @@ All three are isolation-with-migration models: one ancestral population splits i
 
 See the [model schematic](plots/model.pdf) for the full parameterisation.
 
-`growth` is the same model with exponential size changes in place of the instantaneous ones. `sec_contact` is simpler in a different direction: the branches are completely isolated after the split and only begin exchanging migrants partway through, with a single symmetric rate.
+`growth` is the same model with exponential size changes in place of the instantaneous ones. `sec_contact` is much simpler, as the branches are completely isolated after the split and only begin exchanging migrants partway through, with a single symmetric rate.
 
-`basic` and `growth` are constrained, so they are fitted with COBYLA; `sec_contact` is unconstrained and uses Nelder-Mead in log space.
+`basic` and `growth` are constrained, so they are fitted with COBYLA, whereas `sec_contact` is unconstrained and uses Nelder-Mead in log space.
 
-Two notation traps. Migration subscripts name the **receiving** population first in `sec_contact`, following dadi, and the **source** population first in `basic` and `growth`, following the original specification. And sizes in `basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into theta, which is why `basic` has 11 free parameters rather than 12.
+Migration subscripts name the receiving population first in `sec_contact`, following dadi, and the source population first in `basic` and `growth`, following the original specification. And sizes in `basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into theta, which is why `basic` has 11 free parameters rather than 12.
 
 `basic` is not a special case of `growth`: fixing a growth rate to zero holds a branch flat to the present rather than reproducing the jump at TB or TD. They are non-nested, hence CLAIC rather than a likelihood ratio test.
 
 ## Running it
 
-Everything goes through SLURM. Build the spectrum once:
+For this project, everything was performed on High-Performance Computing - where everything was ran through SLURM. Build the spectrum once:
 
     mkdir -p logs && sbatch submit_sfs.sh
 
