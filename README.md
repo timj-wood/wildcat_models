@@ -1,85 +1,231 @@
-# Demographic inference for Scottish wildcats and domestic cats using ∂a∂i
+# Scottish wildcat / domestic cat demography
 
 ## Introduction
 
-Scottish wildcats (*Felis silvestris grampia*) have undergone extensive hybridisation with domestic cats (*F. catus*). The hybridisation is now advanced enough that the wild population is at risk of being genetically "swamped", which would amount to extinction of the wildcat as a distinct genetic entity even if wild-living cats remain.
+Scottish wildcats (*Felis silvestris*) have hybridised extensively with domestic
+cats (*F. catus*). The hybridisation is severe enough that the wild population is
+at risk of being genetically swamped: enough domestic ancestry enters the
+population each generation that the wildcat genome is progressively replaced
+rather than the two forms remaining distinct. Interpreting how far that has gone
+needs a demographic baseline. When did the two lineages separate, how much gene
+flow has passed between them since, and how large were the populations before and
+after the recent collapse of the Scottish one?
 
-This project uses [∂a∂i](https://dadi.readthedocs.io/) to fit and compare demographic models for the two populations. ∂a∂i is a composite-likelihood method: rather than simulating datasets and comparing summaries, as in Approximate Bayesian Computation, it solves a diffusion approximation to the allele-frequency distribution under a given demographic model and computes the expected [joint site frequency spectrum](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1000695) (JSFS). The observed JSFS is then treated as a multinomial sample from that expectation. This makes model fitting fast enough to compare many models and to optimise from many starting points, at the cost of treating linked sites as independent — an assumption that has to be corrected for before likelihoods can be compared or uncertainties quoted (see *Model comparison and uncertainty* below).
+This project estimates that baseline by fitting two-population demographic models
+to the joint site frequency spectrum (JSFS) with
+[dadi](https://dadi.readthedocs.io) 2.4.4, comparing the models with CLAIC, and
+putting confidence intervals on the fitted parameters with the Godambe
+information matrix.
 
-The original motivation was that a simple isolation-with-migration (IM) model appeared to fit the data poorly, suggesting model misspecification. Later work suggested that IM may in fact fit reasonably well, but the aim of the project is unchanged: with a larger dataset and a set of alternative models, it is possible to compare likelihoods properly, identify which features of the demography the data can and cannot resolve, and quantify how well the preferred model reproduces the observed spectrum.
+dadi takes a different route to the same question as the ABC and simulation-based
+approaches used elsewhere on this dataset. Rather than simulating replicate
+datasets and comparing summary statistics, it numerically solves a
+[diffusion approximation](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1000695)
+to the Wright-Fisher process to get the expected JSFS under a set of demographic
+parameters, and scores that expectation against the observed spectrum with a
+Poisson likelihood over bins. It is fast, and it returns a likelihood, so models
+can be ranked directly.
 
-The work also serves as a composite-likelihood baseline for Grace Yan's PhD, which develops [simulation-based inference](https://www.pnas.org/doi/10.1073/pnas.1912789117) (SBI) methods for genetic data. Documented parameter estimates and confidence intervals from a well-understood likelihood method give a point of comparison for the SBI results on the same dataset.
+The catch is that the likelihood is **composite**. Linked sites are not
+independent, but the Poisson calculation treats every site as though it were, so
+the likelihood surface is correctly located but far too sharply peaked. Parameter
+estimates are still consistent; standard errors and likelihood differences are
+not. Both are corrected here using the
+[Godambe information matrix](https://doi.org/10.1093/molbev/msv255) estimated from
+a block bootstrap, which is also what CLAIC uses in place of the AIC penalty. The
+effective parameter counts in the results below give a sense of the size of the
+problem: eleven free parameters behave like nearly three hundred.
 
-## The data
+The work complements Grace Yan's PhD on simulation-based inference for genetic
+data. These fits are a composite-likelihood baseline for the same dataset, with
+documented parameter estimates and uncertainties to compare SBI results against.
 
-The dataset consists of chromosomes 1 and 2 from wild-caught Scottish wildcats and domestic cats:
+## Data
 
-* **16 wild-caught Scottish wildcats** and **6 domestic cats**.
-* **22,488,648 callable sites** after filtering.
-* A **folded 33 × 13 joint site frequency spectrum**. The spectrum is folded because the ancestral allele cannot be reliably assigned, so counts are recorded as minor-allele frequencies.
-* Mutation rate μ = 0.86 × 10⁻⁸ per site per generation, from a domestic cat pedigree (Wang et al. 2022), and a generation time of approximately 3 years. These are used to convert scaled parameters into individuals and years.
+Whole-genome SNPs from 46 cats, chromosomes 1 and 2, in MSMC multihetsep
+format. The analysed pair is:
 
-Captive Scottish wildcats were excluded rather than pooled with the wild-caught samples. Hudson's *F*<sub>ST</sub> between the two groups is 0.085, and the pooled spectrum carries substantially more intermediate-frequency mass, which biases divergence-time and migration estimates.
+| Population | Individuals | Haplotypes |
+|---|---|---|
+| Scottish wildcat (wild-caught) | 16 | 32 |
+| Domestic | 6 | 12 |
 
-## The models
+10 captive-bred Scottish cats and 14 mainland European wildcats are in the
+input files but are not analysed. Hudson FST between the wild-caught and
+captive Scottish cats is 0.085, so they are not treated as one population.
 
-Three two-population models are fitted and compared. Population sizes are given in individuals and times in generations before the present; migration subscripts name the **source** population first.
+Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation
+(Wang et al. 2022), generation time 3 years (Howard-McCombe et al. 2021).
 
-* **`basic`** (11 parameters). An ancestral population splits into a wildcat and a domestic lineage. Each lineage has its own size, and the domestic lineage undergoes a change in size at domestication. The Scottish wildcat lineage undergoes a recent collapse. Migration is symmetric in form but estimated separately in each direction, and is allowed to differ before and after the recent events.
-* **`growth`** (13 parameters). As `basic`, but with exponential size change in the wildcat lineage rather than a step change.
-* **`sec_contact`** (6 parameters). A secondary-contact model in ∂a∂i's own parameterisation: divergence in isolation followed by a period of migration. Included as a simpler alternative with a different qualitative history.
+Three site counts, which are easy to confuse:
 
-`basic` and `growth` impose a time-ordering constraint, TA > max(TB, TD), so that the ancestral split precedes both the wildcat collapse and domestication. The constraint is enforced during optimisation using [COBYLA](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/), which handles inequality constraints directly.
+| Count | Value | Where it comes from |
+|---|---|---|
+| Raw segregating sites | 145,716 | lines in the two multihetsep files |
+| Biallelic | 145,512 | after dropping 204 multiallelic |
+| In the fitted spectrum | 123,348 | `Spectrum.S()` on the 33 x 13 array |
 
-Because `sec_contact` is written in ∂a∂i's own notation (ν as a ratio to N<sub>ref</sub>, epoch durations, migration named by receiving population) and `basic` and `growth` follow Mark's notation (absolute sizes, times before present, source-first migration subscripts), the two conventions are kept separate throughout rather than harmonised. Translating between them silently is an easy way to introduce sign and direction errors.
+The last gap is not filtering. 22,164 sites are polymorphic across all 92
+haplotypes but monomorphic within the 32 Scottish and 12 domestic haplotypes
+analysed, so they land in the masked corner.
 
-## Fitting
+The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the
+monomorphic corner, plus the 208 redundant entries above the folding diagonal
+at i + j = 22, whose counts are already carried by their reflected partners.
+The likelihood is therefore evaluated over 220 bins.
 
-Optimisation is staged, in four rounds of 50 restarts each. Each round perturbs the best parameters from the previous round by a shrinking factor (2 → 1 → 0.5 → 0.25 fold) and tightens the convergence tolerance. Convergence is judged by the spread of the top ten log-likelihoods rather than by the optimiser's own exit status: a narrow spread across independent starts is evidence that the optimum is real, and a parameter that drifts monotonically towards its bound across rounds is evidence that it is not identified by the data.
+<img src="plots/jsfs.png" alt="Folded joint site frequency spectrum, Scottish wild-caught x domestic" width="450">
 
-## Model comparison and uncertainty
+## Models
 
-Composite likelihood treats linked sites as independent, so it overstates the information in the data — here by roughly 67-fold. Raw AIC and likelihood-ratio tests are therefore invalid. Two corrections are applied, both built from a **block bootstrap** (100 replicates, 1 Mb blocks, giving around 415 blocks across the two chromosomes):
+| Name | Function | Parameters |
+|---|---|---|
+| `sec_contact` | `dadi.Demographics2D.sec_contact_asym_mig` | 6 |
+| `basic` | `wildcat_domestic` | 11 |
+| `growth` | `wildcat_domestic_growth` | 13 |
 
-* **CLAIC** for model comparison, using the [Godambe information matrix](https://academic.oup.com/mbe/article/33/2/591/2579696) to rescale the effective number of parameters.
-* **Confidence intervals** from the Godambe sandwich covariance, H⁻¹JH⁻¹, computed on the log scale via the delta method so that intervals on sizes and times stay positive.
+All three are isolation-with-migration models: one ancestral population splits
+into a *silvestris* branch and a *lybica* branch, and the two exchange migrants
+after the split. They differ in what happens to population size on each branch,
+and in whether migration runs the whole way.
 
-It is the number of independent blocks, not the number of bootstrap replicates, that limits the effective information, so increasing the replicate count does not narrow the intervals.
+`basic` works as follows:
 
-## Repository contents
+* An ancestral population of size NA exists until TA, when it splits into the
+  lineage leading to the Scottish wildcat and the lineage leading to the domestic
+  cat.
+* From TA to the present, the two branches exchange migrants continuously and
+  asymmetrically, at rates m2_ds and m2_sd.
+* The domestic branch changes size instantaneously at TD, which the fit places
+  close to the archaeological date for domestication.
+* The Scottish branch changes size instantaneously at TB, which the fit places
+  several hundred years ago and estimates far more tightly than anything else in
+  the model.
+* The two size changes are constrained to postdate the split, TA > max(TB, TD).
 
-| File | Purpose |
-| --- | --- |
-| `wildcat_pipeline.py` | Data loading, spectrum construction, staged optimisation, bootstrapping, CLAIC and confidence intervals |
-| `wildcat_models.py` | Model definitions (`basic`, `growth`, `sec_contact`) and parameter bounds |
-| `claic.py` | Godambe information matrix and CLAIC calculation |
-| `plot_demography.py` | Converts fitted parameters to effective population size against years before present for both lineages, with confidence shading; exports long-format CSV for replotting |
-| `report/` | LaTeX source for the write-up |
+<img src="plots/model.png" alt="Schematic of the basic model" width="500">
 
-Output directories are set through the `WILDCAT_OUTDIR` environment variable, read by both the Python pipeline and the submission scripts, so that results from different sample sets cannot be mixed.
+`growth` is the same model with exponential size changes in place of the
+instantaneous ones. `sec_contact` is simpler in a different direction: the
+branches are completely isolated after the split and only begin exchanging
+migrants partway through, with a single symmetric rate.
 
-## Running
+`basic` and `growth` are constrained, so they are fitted with COBYLA;
+`sec_contact` is unconstrained and uses Nelder-Mead in log space.
 
-Fits are run on the University of Bristol BluePebble cluster under SLURM. All jobs are submitted with `sbatch`; nothing is run interactively on the login node. Short diagnostics go to the `short` partition and full staged fits to `compute`.
+Two notation traps. Migration subscripts name the **receiving** population
+first in `sec_contact`, following dadi, and the **source** population first in
+`basic` and `growth`, following the original specification. And sizes in
+`basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into
+theta, which is why `basic` has 11 free parameters rather than 12.
 
-The environment is a conda environment containing ∂a∂i 2.4.4 and its dependencies:
+`basic` is not a special case of `growth`: fixing a growth rate to zero holds a
+branch flat to the present rather than reproducing the jump at TB or TD. They
+are non-nested, hence CLAIC rather than a likelihood ratio test.
 
-```
-conda env create -f environment.yml
-conda activate dadi
-```
+## Running it
 
-A typical run:
+Everything goes through SLURM. Build the spectrum once:
 
-```
-export WILDCAT_OUTDIR=results_wild
-sbatch scripts/fit_model.sh basic
-sbatch scripts/bootstrap.sh
-sbatch scripts/claic.sh --fitdir results_wild/round4
-```
+    mkdir -p logs && sbatch submit_sfs.sh
 
-## References
+Then fit a model. This submits four rounds of 50 restarts as a chain of
+dependent jobs, each round perturbing less around the best point from the last:
 
-Gutenkunst, R. N., Hernandez, R. D., Williamson, S. H., & Bustamante, C. D. (2009). Inferring the joint demographic history of multiple populations from multidimensional SNP frequency data. *PLoS Genetics*, 5(10), e1000695.
+    sbatch run_stages.sh sec_contact
+    sbatch run_stages.sh basic
+    sbatch run_stages.sh growth
 
-Coffman, A. J., Hsieh, P. H., Gravel, S., & Gutenkunst, R. N. (2016). Computationally efficient composite likelihood statistics for demographic inference. *Molecular Biology and Evolution*, 33(2), 591–593.
+The answer for each model ends up in `results_wild/best_<model>_r4.json`.
+Then compare:
+
+    sbatch submit_report.sh
+
+which writes per-model CSVs, `model_comparison.csv`, confidence intervals and
+fit figures.
+
+Run parameters are written to a metadata file alongside each set of results,
+including the seed used to draw the 100 bootstrap replicates. The bootstrap is
+the only stochastic step between the data and the reported CLAIC values and
+intervals, so recording the seed means those can be regenerated exactly rather
+than approximately.
+
+## Files
+
+    wildcat_pipeline.py    everything: spectrum, fitting, rescaling, report
+    wildcat_models.py      model functions and bounds (Dennis)
+    claic.py               CLAIC (Dennis)
+    submit_sfs.sh          build the spectrum and bootstraps
+    run_stages.sh          submit a four-round staged optimisation
+    submit_stage.sh        one round, run as a job array
+    submit_report.sh       CLAIC comparison, intervals and figures
+
+Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
+
+## Results
+
+Four rounds of 50 restarts per model, compared with CLAIC over 100 block
+bootstraps. Effective parameter counts are tr(J.H^-1) over the parameter vector
+including theta, so read against k+1. They far exceed the free parameter count
+because the composite likelihood treats linked sites as independent.
+
+| Model | ll | k | eff. k | CLAIC | dCLAIC |
+|---|---|---|---|---|---|
+| `growth` | -1376.22 | 13 | 310.6 | 3373.67 | 0.00 |
+| `basic` | -1411.14 | 11 | 292.7 | 3407.74 | 34.07 |
+| `sec_contact` | -1768.69 | 6 | 338.3 | 4214.04 | 840.37 |
+
+`sec_contact` is rejected by 840 units. `basic` and `growth` are not
+distinguishable: the 34-unit gap is smaller than the noise on the penalty terms
+that produce it. `basic` is reported, being the more parsimonious, the only one
+to converge to an unconstrained interior optimum (top-10 spread 0.107), and the
+most stable to the finite-difference step size.
+
+### Parameters of `basic`
+
+95% intervals from the Godambe matrix on the log scale, so multiplicative and
+asymmetric. Physical intervals convert each limit at the point estimate of
+Nref, and so do **not** carry the uncertainty in theta.
+
+| Parameter | Value | 95% CI | CI width |
+|---|---|---|---|
+| Nref | 13,514 | 6,144 - 29,718 | 4.8 |
+| Split of silvestris and lybica, TA | 485,000 yr | 186,000 - 1,264,000 | 6.8 |
+| Domestic size change, TD | 10,600 yr | 3,200 - 35,100 | 11.0 |
+| Wildcat size change, TB | 673 yr | 648 - 700 | 1.08 |
+| Wildcat Ne after TB | 2,711 | 2,191 - 3,354 | 1.53 |
+| Domestic Ne after TD | 22,413 | 8,661 - 58,002 | 6.7 |
+| Domestic into wildcat, m2_ds | 18.76 | 18.03 - 19.51 | 1.08 |
+| Wildcat into domestic, m2_sd | 6.07 | 4.49 - 8.20 | 1.83 |
+
+Migrant counts are 1.88 individuals per generation into the wildcat and 5.03
+into the domestic, with no interval, being products of two correlated
+parameters. Rates and counts point opposite ways, because the count scales with
+the receiving population.
+
+<img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
+
+## Notes
+
+Some things that cost time to work out, in case they are useful:
+
+- `dadi.Inference.opt(log_opt=True)` returns the exponentiated starting point,
+  not the optimum. The likelihood is still correct.
+- `dadi.Misc.perturb_params` uses numpy's legacy global RandomState.
+  `np.random.default_rng()` is silently ignored, so seed with
+  `np.random.seed()`.
+- `optimize_log_fmin` honours only `maxiter`. COBYLA honours only `maxtime` and
+  `maxeval`. Passing the wrong one fails silently.
+- COBYLA raises `RoundoffLimited` when a parameter pins against a bound of
+  exactly 0, so migration lower bounds are floored at 1e-4.
+- CLAIC needs a properly converged optimum or the Hessian is unstable. The
+  report stage re-polishes the best restart before computing it.
+- `Godambe.get_godambe` inverts J unconditionally, contrary to its docstring.
+  Take J and H as intermediates and assemble CLAIC yourself.
+- With `multinom=True`, theta is appended to the parameter vector, so J and H
+  are (k+1) x (k+1) and tr(J.H^-1) must be read against k+1, not k.
+- `Misc.fragment_data_dict` chunks on physical position, not on callable sites.
+  Two chromosomes over ~414 Mb give ~415 blocks at 1 Mb, not the 22 that
+  dividing L by the chunk size suggests.
+- Godambe intervals are within-model. Two models the data cannot separate can
+  return intervals that exclude each other, and here they do.
