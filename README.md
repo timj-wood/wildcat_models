@@ -64,7 +64,7 @@ All three are isolation-with-migration models: one ancestral population splits i
   the model.
 * The two size changes are constrained to postdate the split, TA > max(TB, TD).
 
-See the [model schematic](plots/model.png) for the full parameterisation.
+See the [model schematic](plots/model.pdf) for the full parameterisation.
 
 `growth` is the same model with exponential size changes in place of the instantaneous ones. `sec_contact` is simpler in a different direction: the branches are completely isolated after the split and only begin exchanging migrants partway through, with a single symmetric rate.
 
