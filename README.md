@@ -103,7 +103,7 @@ and in whether migration runs the whole way.
   the model.
 * The two size changes are constrained to postdate the split, TA > max(TB, TD).
 
-![alt text](https://github.com/timj-wood/wildcat_models/plots/model.png?raw=true)
+See the [model schematic](plots/model.png) for the full parameterisation.
 
 `growth` is the same model with exponential size changes in place of the
 instantaneous ones. `sec_contact` is simpler in a different direction: the
