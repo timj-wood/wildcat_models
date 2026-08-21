@@ -28,7 +28,10 @@ Everything goes through documented dadi entry points:
     dadi.Misc.bootstraps_from_dd_chunks   block bootstrap replicates
     dadi.Inference.optimize_log_fmin      unconstrained fit (sec_contact)
     dadi.Inference.opt + nlopt.LN_COBYLA  constrained fit (Dennis's models need TA > max(TB,TD))
-    dadi.Godambe.get_godambe              via claic.claic, for CLAIC
+    dadi.Godambe.get_godambe              via claic.claic, for CLAIC and for the
+                                          confidence intervals, which reuse the
+                                          same J and H rather than calling
+                                          GIM_uncert and recomputing them
 
 Requires, in the same directory: wildcat_models.py and claic.py (both unmodified).
 Written against dadi 2.4.4.
@@ -523,6 +526,45 @@ def polish_fit(model_name, fs, params, maxiter=200, maxeval=2000, rounds=3,
     return p, ll, theta, ll - ll_start
 
 
+def parameter_errors(res, params, theta):
+    """
+    Per-parameter standard errors from the same J and H that produced the CLAIC.
+
+    Not dadi.Godambe.GIM_uncert, which would recompute both matrices from the
+    100 replicates a third time -- basic is the expensive one. Reusing res also
+    means the intervals and the CLAIC refer to the same matrices at the same
+    step size rather than to a second, independently computed pair.
+
+    The Godambe matrix is G = H J^-1 H, so the sandwich covariance G^-1 is
+    H^-1 J H^-1. That form needs only H inverted, instead of building G and
+    re-inverting it, which matters on a matrix whose condition number is ~1e15.
+
+    Errors come back on the LOG scale, by the delta method, SE(log x) =
+    SE(x) / x, so that the interval x * exp(+-1.96 SE) stays positive. TB's
+    linear-scale lower limit is negative, which is not a time. Differencing in
+    log space directly is not the alternative: it puts a negative eigenvalue
+    into H on this data (see the note in stage_report).
+
+    theta is appended last, matching claic's multinom=True convention, so the
+    returned array has k+1 entries in the same order as the effective parameter
+    count is read.
+
+    A negative sandwich variance is a flat direction in H rather than an error,
+    and is returned as nan rather than clipped, so that the caller can report
+    the interval as undefined instead of inventing one.
+    """
+    J, H = np.asarray(res["J"]), np.asarray(res["H"])
+    Hinv = np.linalg.inv(H)
+    var = np.diag(Hinv @ J @ Hinv)
+    with np.errstate(invalid="ignore"):
+        se = np.sqrt(np.where(var > 0, var, np.nan))
+    vals = np.append(np.asarray(params, dtype=float), theta)
+    if len(se) != len(vals):
+        # multinom=False, or some other convention: theta is not in the matrix.
+        vals = vals[:len(se)]
+    return se / vals
+
+
 # =============================================================================
 # PART 4: DADI UNITS -> BIOLOGICAL UNITS
 # =============================================================================
@@ -863,6 +905,27 @@ def model_csv(model_name, best, ok, n_attempted, meta, phys, cl, rank):
                 "an interior maximum and the value is meaningless."
                 .format(np.linalg.cond(res["H"]), ev.min())])
 
+    se = best.get("se_log")
+    if se is not None:
+        vals = list(best["params"]) + [best["theta"]]
+        labels = names + ["theta"]
+        rows += [B, ["=== 95% Confidence Intervals ===", "", ""]]
+        for n, v, s, lo, hi in zip(labels, vals, se, list(lb) + [0.0],
+                                   list(ub) + [np.inf]):
+            if not np.isfinite(s):
+                rows.append([n + "_CI", "not defined",
+                             "Negative sandwich variance: a flat direction in H, "
+                             "not an interval that happens to be wide"])
+                continue
+            ci_lo, ci_hi = v * np.exp(-1.96 * s), v * np.exp(1.96 * s)
+            note = ("Godambe, log scale by the delta method"
+                    if ci_lo >= lo and ci_hi <= hi else
+                    "Godambe, log scale by the delta method. CROSSES A BOUND: "
+                    "the quadratic approximation assumes an interior optimum, "
+                    "so this interval is too narrow -- do not interpret the "
+                    "limit that crosses")
+            rows.append([n + "_CI", "{:.4g} to {:.4g}".format(ci_lo, ci_hi), note])
+
     lls = [r["ll"] for r in ok]
     spread = lls[0] - lls[min(9, len(lls) - 1)]
     stuck = [n for n, b in zip(names, best["at_bound"]) if b]
@@ -885,6 +948,14 @@ def model_csv(model_name, best, ok, n_attempted, meta, phys, cl, rank):
              ["CLAIC precision", "",
               "The trace carries sampling noise of roughly 10-15%, so CLAIC "
               "differences of a few units are not meaningful. Read only large gaps."],
+             ["Reading the intervals", "",
+              "These are Godambe, not Fisher: G = H.J^-1.H, so the covariance is "
+              "H^-1.J.H^-1, which widens the naive interval by however much "
+              "linkage has inflated the composite likelihood. They are computed "
+              "on the log scale, so they are multiplicative and asymmetric about "
+              "the estimate. 'not defined' means a negative sandwich variance, "
+              "i.e. a flat direction in H -- that is a statement about "
+              "identifiability, not a failed calculation."],
              ["Rates vs individuals", "",
               "Migrant individuals per generation is nu*M/2, which scales with the "
               "RECEIVING population, not Nref. A large rate asymmetry can come purely "
@@ -969,6 +1040,24 @@ def stage_report(args):
                 print("    eff. k varies by {:.0%} across step sizes{}".format(
                     rel, "" if rel < 0.15 else "  <- NOT CONVERGED, do not report"),
                     flush=True)
+
+            # Confidence intervals, from the first eps only. Stored on `best`
+            # rather than as a fifth element of the payload tuple, because
+            # --use-cached loads claic_*.pkl written before this existed and
+            # _write_model_outputs unpacks four. A new dict key means old
+            # caches still load and simply skip the section.
+            try:
+                best["se_log"] = parameter_errors(per_eps[0][1],
+                                                  best["params"], best["theta"])
+                bad = int(np.sum(~np.isfinite(best["se_log"])))
+                print("    intervals at eps={:g}{}".format(
+                    per_eps[0][0],
+                    "" if not bad else
+                    "  <- {} parameter(s) with no defined interval".format(bad)),
+                    flush=True)
+            except Exception as e:
+                print("    intervals failed ({}); CLAIC is unaffected".format(e),
+                      flush=True)
 
         done[name] = (results, ok, best, per_eps)
         _write_model_outputs(name, done[name], meta, fs,
