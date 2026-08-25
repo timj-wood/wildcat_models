@@ -73,7 +73,9 @@ Migration subscripts name the receiving population first in `sec_contact`, follo
 
 ## Running it
 
-For this project, everything was performed on High-Performance Computing - where everything was ran through SLURM. Build the spectrum once:
+For this project, everything was performed on High-Performance Computing - where everything was ran through SLURM files.
+
+Build the spectrum once:
 
     mkdir -p logs && sbatch submit_sfs.sh
 
