@@ -76,7 +76,7 @@ Migration subscripts name the receiving population first in `sec_contact`, follo
 
 ## Running it
 
-Everything was run on the University of Bristol HPC through SLURM.
+This work was carried out using the computational facilities of the Advanced Computing Research Centre, University of Bristol - http://www.bristol.ac.uk/acrc/.
 
 Build the spectrum once:
 
