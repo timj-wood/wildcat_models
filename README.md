@@ -134,4 +134,4 @@ Four rounds of 50 restarts per model, compared with CLAIC over 100 block bootstr
 
 Migrant counts are 1.88 individuals per generation into the wildcat and 5.03 into the domestic, with no interval, being products of two correlated parameters. Rates and counts point opposite ways, because the count scales with the receiving population.
 
-<img src="results/fit_basic.png" alt="basic model fit and residuals" width="650">
+<img src="results/models/fit_basic.png" alt="basic model fit and residuals" width="650">
