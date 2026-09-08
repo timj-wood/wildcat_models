@@ -160,6 +160,6 @@ The narrow intervals are not independent either. T_B and m2_ds correlate at +0.9
 
 H has a condition number of order 1e15, so correlations near +/-1 should be read as saying two parameters are not separately identified, not as precise measures of covariation.
 
-<img src="results/correlation/corr_basic.png" alt="parameter correlation matrix for basic" width="500">
+<img src="results/correlation/corr_basic.pdf" alt="parameter correlation matrix for basic" width="500">
 
 Matrices for all three models are in `results/correlation/corr_<model>.csv`, with parameter order in the header row. Order follows `wildcat_models.py`, so in `growth` the present-day sizes come fifth and sixth.
