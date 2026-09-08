@@ -12,7 +12,7 @@ However, the likelihood being composite presents initial issues. Linked sites ar
 
 ## Data
 
-Whole-genome SNPs from 46 cats, chromosomes 1 and 2, in MSMC multihetsep format. The analysed pair is:
+Whole-genome SNPs from 46 cats, chromosomes A1 and A2, in MSMC multihetsep format. The analysed pair is:
 
 | Population | Individuals | Haplotypes |
 |---|---|---|
@@ -33,7 +33,7 @@ Three site counts:
 
 The last gap is not filtering. 22,164 sites are polymorphic across all 92 haplotypes but monomorphic within the 32 Scottish and 12 domestic haplotypes analysed, so they land in the masked corner.
 
-The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the monomorphic corner, plus the 208 redundant entries above the folding diagonal at i + j = 22, whose counts are already carried by their reflected partners. The likelihood is therefore evaluated over 220 bins.
+The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the monomorphic corner, plus the 208 redundant entries above the folding diagonal at i + j = 22, whose counts are already carried by their reflected partners. The likelihood is therefore evaluated over 220 bins. Because the spectrum is folded, the axes are minor-allele counts (minor across the pooled 44 haplotypes), not derived-allele counts.
 
 <img src="plots/jsfs.png" alt="Folded joint site frequency spectrum, Scottish wild-caught x domestic" width="450">
 
@@ -45,17 +45,20 @@ The spectrum is folded, 33 x 13. 209 of its 429 bins are masked: the monomorphic
 | `basic` | `wildcat_domestic` | 11 |
 | `growth` | `wildcat_domestic_growth` | 13 |
 
-All three models involve the ancestral population splitting into a *silvestris* branch and a *lybica* branch, where the two exchange migrants after the split. Model differences lie in what occurs to the population sizes, after the split, and the timings of migration between the two populations.
+All three models involve the ancestral population splitting into a *silvestris* branch and a *lybica* branch, where the two exchange migrants after the split. Model differences lie in what occurs to the population sizes after the split, and in when the migration rates are allowed to change.
 
 `basic` works as follows:
 
 * An ancestral population of size NA exists until TA, when it splits into the
   lineage leading to the Scottish wildcat and the lineage leading to the domestic
   cat.
-* From TA to the present, the two branches exchange migrants continuously and
-  asymmetrically, at rates m2_ds and m2_sd.
-* The domestic branch changes size instantaneously at TD, which the fit places
-  close to the archaeological date for domestication.
+* The two branches exchange migrants continuously and asymmetrically from TA
+  onwards. Each direction has an early rate and a recent rate: into the wildcat,
+  m_ls from TA to TB and then m2_ds to the present; into the domestic, m_sl from
+  TA to TD and then m2_sd to the present.
+* The domestic branch changes size instantaneously at TD. The fit places this at
+  about 10,600 years, near the archaeological evidence for early cat-human
+  association, but with a confidence interval too wide to treat as a date.
 * The Scottish branch changes size instantaneously at TB, which the fit places
   several hundred years ago and estimates far more tightly than anything else in
   the model.
@@ -63,45 +66,58 @@ All three models involve the ancestral population splitting into a *silvestris* 
 
 See the [model schematic](plots/model.pdf) for the full parameterisation.
 
-`growth` is the same model with exponential size changes in place of the instantaneous ones. `sec_contact` is much simpler, as the branches are completely isolated after the split and only begin exchanging migrants partway through, with a single symmetric rate.
+`growth` is the same model with exponential size changes in place of the instantaneous ones, which adds two present-day sizes. `sec_contact` is simpler: the branches are completely isolated after the split for a duration T1 and then exchange migrants for a duration T2, at two asymmetric rates m12 and m21, with one size per branch.
 
 `basic` and `growth` are constrained, so they are fitted with COBYLA, whereas `sec_contact` is unconstrained and uses Nelder-Mead in log space.
 
-Migration subscripts name the receiving population first in `sec_contact`, following dadi, and the source population first in `basic` and `growth`, following the original specification. And sizes in `basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into theta, which is why `basic` has 11 free parameters rather than 12.
+Migration subscripts name the receiving population first in `sec_contact`, following dadi, and the source population first in `basic` and `growth`, following the original specification. Sizes in `basic` and `growth` are ratios to NA, which is fixed at 1 and absorbed into theta, which is why `basic` has 11 free parameters rather than 12.
 
-`basic` is not a special case of `growth`: fixing a growth rate to zero holds a branch flat to the present rather than reproducing the jump at TB or TD. They are non-nested, hence CLAIC rather than a likelihood ratio test.
+`basic` is not a special case of `growth`: sizes in `growth` are continuous at TB and TD by construction, so no choice of its parameters reproduces the jump that `basic` places there. They are non-nested, hence CLAIC rather than a likelihood ratio test.
 
 ## Running it
 
-For this project, everything was performed on High-Performance Computing - where everything was ran through SLURM files.
+Everything was run on the University of Bristol HPC through SLURM.
 
 Build the spectrum once:
 
-    mkdir -p logs && sbatch submit_sfs.sh
+    mkdir -p logs && sbatch scripts/submit_sfs.sh
 
 Then fit a model. This submits four rounds of 50 restarts as a chain of dependent jobs, each round perturbing less around the best point from the last:
 
-    sbatch run_stages.sh sec_contact
-    sbatch run_stages.sh basic
-    sbatch run_stages.sh growth
+    sbatch scripts/run_stages.sh sec_contact
+    sbatch scripts/run_stages.sh basic
+    sbatch scripts/run_stages.sh growth
 
 The answer for each model ends up in `results_wild/best_<model>_r4.json`. Then compare:
 
-    sbatch submit_report.sh
+    sbatch scripts/submit_report.sh
 
-which writes per-model CSVs, `model_comparison.csv`, confidence intervals and fit figures.
+which writes per-model CSVs, `model_comparison.csv`, confidence intervals, fit figures, and `claic_<model>.pkl` holding the Godambe H and J for each model. Finally, the correlation matrices:
+
+    sbatch scripts/submit_corr.sh
+
+which reads the stored H and J, forms the sandwich covariance H^-1 J H^-1 (the same matrix whose diagonal gave the intervals), and writes `results/correlation/corr_<model>.pdf` and `corr_<model>.csv`. Nothing is refitted and no bootstrap gradient is recomputed, so this takes seconds. The job log prints se/value against the stored standard errors as a check that the pickle matches the fit in the tables.
 
 Run parameters are written to a metadata file alongside each set of results, including the seed used to draw the 100 bootstrap replicates. The bootstrap is the only stochastic step between the data and the reported CLAIC values and intervals, so recording the seed means those can be regenerated exactly rather than approximately.
 
 ## Files
 
-    wildcat_pipeline.py    everything: spectrum, fitting, rescaling, report
-    wildcat_models.py      model functions and bounds (Dennis)
-    claic.py               CLAIC (Dennis)
-    submit_sfs.sh          build the spectrum and bootstraps
-    run_stages.sh          submit a four-round staged optimisation
-    submit_stage.sh        one round, run as a job array
-    submit_report.sh       CLAIC comparison, intervals and figures
+    scripts/
+      wildcat_pipeline.py    everything: spectrum, fitting, rescaling, report
+      wildcat_models.py      model functions and bounds (Dennis)
+      claic.py               CLAIC (Dennis)
+      plot_corr.py           correlation matrices from the stored Godambe H and J
+      submit_sfs.sh          build the spectrum and bootstraps
+      run_stages.sh          submit a four-round staged optimisation
+      submit_stage.sh        one round, run as a job array
+      submit_report.sh       CLAIC comparison, intervals and figures
+      submit_corr.sh         correlation matrices (runs plot_corr.py)
+    data/                    input multihetsep files
+    environment.yml          conda environment (dadi 2.4.4)
+    plots/                   spectrum and model schematic
+    results/
+      models/                fits, intervals, model_comparison.csv, fit figures
+      correlation/           corr_<model>.csv and corr_<model>.pdf
 
 Output directory is set by `WILDCAT_OUTDIR`, default `results_wild`.
 
@@ -115,7 +131,7 @@ Four rounds of 50 restarts per model, compared with CLAIC over 100 block bootstr
 | `basic` | -1411.14 | 11 | 292.7 | 3407.74 | 34.07 |
 | `sec_contact` | -1768.69 | 6 | 338.3 | 4214.04 | 840.37 |
 
-`sec_contact` is rejected by 840 units. `basic` and `growth` are not distinguishable: the 34-unit gap is smaller than the noise on the penalty terms that produce it. `basic` is reported, being the more parsimonious, the only one to converge to an unconstrained interior optimum (top-10 spread 0.107), and the most stable to the finite-difference step size.
+`sec_contact` scores 840 units worse than `growth` and 806 worse than `basic`. `basic` and `growth` are not distinguishable: the `growth` fit ended with N_S on its upper bound, where CLAIC is not defined, and in any case the 34-unit gap is smaller than the noise expected on the penalty terms from 100 replicates. `basic` is reported as the primary result: it is the only model with no parameter on a bound, and its effective parameter count is the most stable to the finite-difference step size (0.56 against 2.51 for `growth` and 21.15 for `sec_contact`). All three models converged in the sense that the top-10 spread in the final round was small (0.000, 0.107 and 0.903 for `sec_contact`, `basic` and `growth`).
 
 ### Parameters of `basic`
 
@@ -135,3 +151,15 @@ Four rounds of 50 restarts per model, compared with CLAIC over 100 block bootstr
 Migrant counts are 1.88 individuals per generation into the wildcat and 5.03 into the domestic, with no interval, being products of two correlated parameters. Rates and counts point opposite ways, because the count scales with the receiving population.
 
 <img src="results/models/fit_basic.png" alt="basic model fit and residuals" width="650">
+
+### Parameter correlations
+
+The interval widths above are marginal and should not be read independently. The correlation matrix of the sandwich covariance shows that the deep parameters of `basic` lie along a single ridge: N_S, N_L, N_D and T_A correlate with one another at +0.95 to +0.98 and with theta at -0.95 to -0.99, and the early migration rates correlate negatively with the sizes and positively with theta. Raising the ancestral sizes and lengthening the split while lowering theta and the early gene flow leaves the composite likelihood almost unchanged, which is why those intervals are wide.
+
+The narrow intervals are not independent either. T_B and m2_ds correlate at +0.987, so what the data fix is a combination of the length of the recent epoch and the rate of gene flow within it, not each separately. Of the four tightly estimated parameters, only the wildcat size after T_B and m2_sd are free of strong correlations (nothing above 0.49 and 0.20 respectively).
+
+H has a condition number of order 1e15, so correlations near +/-1 should be read as saying two parameters are not separately identified, not as precise measures of covariation.
+
+<img src="results/correlation/corr_basic.png" alt="parameter correlation matrix for basic" width="500">
+
+Matrices for all three models are in `results/correlation/corr_<model>.csv`, with parameter order in the header row. Order follows `wildcat_models.py`, so in `growth` the present-day sizes come fifth and sixth.
