@@ -19,7 +19,7 @@ Whole-genome SNPs from 46 cats, chromosomes A1 and A2, in MSMC multihetsep forma
 | Scottish wildcat (wild-caught) | 16 | 32 |
 | Domestic | 6 | 12 |
 
-10 captive-bred Scottish cats and 14 mainland European wildcats are in the input files but are not analysed. Hudson FST between the wild-caught and captive Scottish cats is 0.085, so they are not treated as one population.
+10 captive-bred Scottish cats and 14 mainland European wildcats are in the input files but are not analysed. Hudson FST between the wild-caught and captive Scottish cats is 0.085, and the captive cats have 21% lower nucleotide diversity, so they are not treated as one population. The comparison of pooled and wild-only spectra in Section 2.2 of the report (site counts, Tajima's D, FST, intermediate-frequency mass, pi) is reproduced by `scripts/pooling_check.py`.
 
 Constants: L = 22,488,648 callable sites, mu = 0.86e-8 per bp per generation (Wang et al. 2022), generation time 3 years (Howard-McCombe et al. 2021).
 
@@ -107,6 +107,7 @@ Run parameters are written to a metadata file alongside each set of results, inc
       wildcat_models.py      model functions and bounds (Dennis)
       claic.py               CLAIC (Dennis)
       plot_corr.py           correlation matrices from the stored Godambe H and J
+      pooling_check.py       Table 2 of the report: pooled vs wild-only spectra, pi
       submit_sfs.sh          build the spectrum and bootstraps
       run_stages.sh          submit a four-round staged optimisation
       submit_stage.sh        one round, run as a job array
