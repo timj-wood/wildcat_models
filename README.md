@@ -2,7 +2,7 @@
 
 Demographic inference for the Scottish wildcat (*Felis silvestris*) and the domestic cat (*F. catus*) from a folded joint site frequency spectrum, using [dadi](https://dadi.readthedocs.io) 2.4.4.
 
-Three two-population models are fitted, compared with CLAIC, and given confidence intervals from the Godambe information matrix (100 block-bootstrap replicates). Background, methods and results are in the accompanying report ([report.pdf](report.pdf)).
+Three two-population models are fitted, compared with CLAIC, and given confidence intervals from the Godambe information matrix (100 block-bootstrap replicates). Background, methods and results are in the accompanying report ([report.pdf](dadi_report.pdf)).
 
 ## Requirements
 
