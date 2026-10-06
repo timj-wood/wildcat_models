@@ -91,6 +91,6 @@ Each run writes a metadata file recording its parameters, including the bootstra
 
 ## Credits
 
-This project was supervised by Mark Beaumont, Dennis Prangle and Grace Yan. Model specification by Mark Beaumont. `wildcat_models.py` and `claic.py` specification by Dennis Prangle. 
+This project was supervised by Mark Beaumont, Dennis Prangle and Grace Yan. Model specification by Mark Beaumont. `wildcat_models.py` and `claic.py` were specified by Dennis Prangle through the use of Claude LLM. 
 
-This work was carried out using the computational facilities of the [Advanced Computing Research Centre](http://www.bristol.ac.uk/acrc/), University of Bristol.
+All code was submitted via the computational facilities of the [Advanced Computing Research Centre](http://www.bristol.ac.uk/acrc/), University of Bristol.
